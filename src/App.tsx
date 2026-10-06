@@ -17,7 +17,7 @@ export default function App(){
   const stripes=Array.from(new Set(boxes.map(box=>box.stripeId)))
   const availableBoxes=boxes.filter(box=>box.stripeId===stripe)
   const activeBox=boxes.find(box=>box.id===boxId)??availableBoxes[0]
-  const positions=useMemo(()=>activeBox?buildPositions(activeBox):[],[activeBox])
+  const positions=useMemo(()=>activeBox?buildPositions(activeBox,samples):[],[activeBox])
   const selected=positions.find(position=>position.id===selectedPosition)
   const selectedSample=selected?.sampleId?samples.find(sample=>sample.id===selected.sampleId):undefined
 
