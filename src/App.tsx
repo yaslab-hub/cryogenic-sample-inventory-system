@@ -1,17 +1,27 @@
-import { useMemo, useState } from 'react'
-import { boxes, buildPositions, samples } from './data/mockData'
+import { useEffect, useMemo, useState } from 'react'
+import { buildPositions } from './data/mockData'
+import { getInventory } from './services/api'
+import type { Box, Sample } from './types'
 
-const stripes=['S1','S2']
+const defaultBoxes: Box[] = []
+const defaultSamples: Sample[] = []
 
 export default function App(){
-  const [stripe,setStripe]=useState('S1')
-  const [boxId,setBoxId]=useState('S1-B01')
+  const [stripe,setStripe]=useState('')
+  const [boxId,setBoxId]=useState('')
   const [selectedPosition,setSelectedPosition]=useState<string|null>(null)
+  const [boxes,setBoxes]=useState<Box[]>(defaultBoxes)
+  const [samples,setSamples]=useState<Sample[]>(defaultSamples)
+  const [loading,setLoading]=useState(true)
+  const [error,setError]=useState('')
+  const stripes=Array.from(new Set(boxes.map(box=>box.stripeId)))
   const availableBoxes=boxes.filter(box=>box.stripeId===stripe)
   const activeBox=boxes.find(box=>box.id===boxId)??availableBoxes[0]
   const positions=useMemo(()=>activeBox?buildPositions(activeBox):[],[activeBox])
   const selected=positions.find(position=>position.id===selectedPosition)
   const selectedSample=selected?.sampleId?samples.find(sample=>sample.id===selected.sampleId):undefined
+
+  useEffect(()=>{ getInventory().then(data=>{ setSamples(data.samples); setBoxes(data.boxes); const firstStripe=data.boxes[0]?.stripeId || ''; setStripe(firstStripe); setBoxId(data.boxes[0]?.id || ''); }).catch(err=>setError(err instanceof Error ? err.message : 'Unable to load inventory')).finally(()=>setLoading(false)) },[])
 
   function changeStripe(value:string){
     setStripe(value)
@@ -20,6 +30,7 @@ export default function App(){
     setSelectedPosition(null)
   }
 
+  if(loading) return <div className="loading-screen">Loading inventory…</div>
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark">Y</div><div><strong>YAS LAB</strong><span>Cryogenic Inventory</span></div></div>
@@ -27,7 +38,7 @@ export default function App(){
       <div className="sidebar-footer">Phase 1 · Foundation</div>
     </aside>
     <main className="main">
-      <header className="topbar"><div><p className="eyebrow">Inventory</p><h1>Storage Map</h1></div><button className="button primary">+ Add Sample</button></header>
+      <header className="topbar"><div><p className="eyebrow">Inventory</p><h1>Storage Map</h1>{error&&<p className="error-message">Backend: {error}</p>}</div><button className="button primary">+ Add Sample</button></header>
       <section className="toolbar">
         <label><span>Stripe</span><select value={stripe} onChange={event=>changeStripe(event.target.value)}>{stripes.map(item=><option key={item}>{item}</option>)}</select></label>
         <label><span>Box</span><select value={activeBox?.id} onChange={event=>{setBoxId(event.target.value);setSelectedPosition(null)}}>{availableBoxes.map(box=><option key={box.id} value={box.id}>{box.name}</option>)}</select></label>
