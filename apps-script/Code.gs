@@ -27,6 +27,49 @@ function doPost(e) {
   finally { lock.releaseLock(); }
 }
 
+
+function seedDemoData() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    setupSheets();
+    const samplesSheet = getSheet(CONFIG.SHEETS.SAMPLES);
+    const storageSheet = getSheet(CONFIG.SHEETS.STORAGE);
+    const boxesSheet = getSheet(CONFIG.SHEETS.BOXES);
+
+    if (samplesSheet.getLastRow() > 1 || storageSheet.getLastRow() > 1 || boxesSheet.getLastRow() > 1) {
+      throw new Error('Demo data was not inserted because inventory data already exists. Clear the test tabs first if you want a clean demo dataset.');
+    }
+
+    boxesSheet.getRange(2, 1, 3, 6).setValues([
+      ['S1-B01', 'S1', 'B01', 'Box 01', 9, 'A,B,C,D,E,F,G,H,I'],
+      ['S1-B02', 'S1', 'B02', 'Box 02', 9, 'A,B,C,D,E,F,G,H,I'],
+      ['S2-B01', 'S2', 'B01', 'Box 01', 9, 'A,B,C,D,E,F,G,H,I']
+    ]);
+
+    const now = nowString();
+    samplesSheet.getRange(2, 1, 3, 10).setValues([
+      ['YAS-001', 'HEK293T', 'Cell line', 12, 5, 'Passed', 'YAS', 'Working stock', now, now],
+      ['YAS-002', 'HeLa', 'Cell line', 8, 4, 'Pending', 'Alex', 'Awaiting QC', now, now],
+      ['YAS-003', 'CHO-K1', 'Cell line', 6, 3, 'Passed', 'YAS', 'Backup stock', now, now]
+    ]);
+
+    storageSheet.getRange(2, 1, 3, 6).setValues([
+      [Utilities.getUuid(), 'YAS-001', 'S1', 'B01', 'C3', now],
+      [Utilities.getUuid(), 'YAS-002', 'S1', 'B01', 'F6', now],
+      [Utilities.getUuid(), 'YAS-003', 'S1', 'B02', 'A1', now]
+    ]);
+
+    logActivity('SEED', 'YAS-001', '', 'S1-B01-C3', 'SYSTEM', 'Inserted demo inventory');
+    logActivity('SEED', 'YAS-002', '', 'S1-B01-F6', 'SYSTEM', 'Inserted demo inventory');
+    logActivity('SEED', 'YAS-003', '', 'S1-B02-A1', 'SYSTEM', 'Inserted demo inventory');
+
+    return getInventory();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function setupSheets() {
   const ss = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   ensureSheet(ss, CONFIG.SHEETS.SAMPLES, ['sample_id','cell_line','sample_type','passage','cell_count','qc_status','owner','notes','created_at','updated_at']);
