@@ -1,6 +1,6 @@
 import type { Box, Sample } from '../types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://script.google.com/macros/s/AKfycby1x2fRTFs4NGWcZ9bqsHFp1piYeRNc1bXpQtINTC0wPU7V_yzIKBOxC9We3aTGE5rG/exec'
 
 export interface InventoryData { samples: Sample[]; boxes: Box[] }
 
