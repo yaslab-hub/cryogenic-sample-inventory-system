@@ -11,7 +11,7 @@ export const samples: Sample[] = [
   { id:'YAS-002', cellLine:'HeLa', sampleType:'Cell line', passage:8, cellCount:4, qcStatus:'Pending', owner:'Alex', locationId:'S1-B01-F6', notes:'Awaiting QC', createdAt:'2026-10-03', updatedAt:'2026-10-03' },
 ]
 
-export function buildPositions(box: Box): Position[] {
+export function buildPositions(box: Box, samples: Sample[]): Position[] {
   return box.columns.flatMap(column => Array.from({length:box.rows}, (_, index) => {
     const row=index+1
     const id=box.id+'-'+column+row
