@@ -103,7 +103,16 @@ gcloud secrets add-iam-policy-binding cryogenic-db-password --member=serviceAcco
 
 ### 5. Build and deploy
 
-Run from the repository root; Cloud Build uses the `Dockerfile`.
+New Google Cloud projects run source builds as the default Compute Engine service account, which can otherwise be denied access to the uploaded source (`storage.objects.get` 403 on `run-sources-...`). Grant it the build role first, and wait about a minute for the change to take effect:
+
+```bash
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member=serviceAccount:$PROJECT_NUMBER-compute@developer.gserviceaccount.com \
+  --role=roles/cloudbuild.builds.builder
+```
+
+Run the deploy from the repository root; Cloud Build uses the `Dockerfile`. The first deploy asks to create an Artifact Registry repository (`cloud-run-source-deploy`); answer `Y`.
 
 ```bash
 gcloud run deploy $SERVICE --source . --region $REGION \
@@ -120,18 +129,24 @@ gcloud run deploy $SERVICE --source . --region $REGION \
 On first start the server creates the tables. Then check:
 
 ```bash
-gcloud run services proxy $SERVICE --region $REGION      # authenticated local tunnel on :8080
-curl http://localhost:8080/api/health
+gcloud run services proxy $SERVICE --region $REGION --port=8081   # authenticated local tunnel
+curl http://localhost:8081/api/health                              # from a second terminal
 ```
+
+`{"ok":true,...}` means Cloud Run reached Cloud SQL; the inventory is empty until you load data. In Cloud Shell, open the app with Web Preview, using "Change port" to select 8081 (a plain browser visit to the service URL returns 403 because the service is private).
 
 ### 6. Load the demo data (optional)
 
-Use the Cloud SQL Auth Proxy from your machine ([install guide](https://cloud.google.com/sql/docs/postgres/connect-auth-proxy)):
+Use the Cloud SQL Auth Proxy ([install guide](https://cloud.google.com/sql/docs/postgres/connect-auth-proxy)). Run this in a terminal inside the repository, after `npm install`. If the shell no longer has `$DB_PASSWORD`, read it back from Secret Manager:
 
 ```bash
+DB_PASSWORD=$(gcloud secrets versions access latest --secret=cryogenic-db-password)
 cloud-sql-proxy $PROJECT_ID:$REGION:$INSTANCE --port 5432 &
 DATABASE_URL="postgres://$DB_USER:$DB_PASSWORD@localhost:5432/$DB_NAME" npm run db:seed
+pkill cloud-sql-proxy
 ```
+
+Port 5432 must be free (stop any local PostgreSQL or test container first).
 
 The seed creates the same demo data as the old Apps Script `seedDemoData()`: 2 stripes, 3 boxes with 81 positions each, and samples YAS-001, YAS-002 and YAS-003.
 
