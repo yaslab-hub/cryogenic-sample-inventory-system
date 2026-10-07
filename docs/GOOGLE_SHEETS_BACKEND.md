@@ -1,5 +1,7 @@
 # Google Sheets + Apps Script Backend
 
+> **Legacy.** The app now runs on Cloud Run with Cloud SQL (PostgreSQL); see `CLOUD_RUN_CLOUD_SQL.md`. The frontend no longer talks to this backend.
+
 ## Architecture
 
 GitHub Pages (React) -> Google Apps Script Web App -> Google Sheets
